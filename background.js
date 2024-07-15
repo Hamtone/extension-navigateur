@@ -1,36 +1,32 @@
 // Dans background.js
 function keepServiceWorkerActive() {
-    setInterval(() => {
-      chrome.runtime.sendMessage({ type: "keepActive" });
-    }, 20000); // Envoie un message toutes les 20 secondes
-  }
-  
-  keepServiceWorkerActive();
+  setInterval(() => {
+    chrome.runtime.sendMessage({ type: "keepActive" });
+  }, 20000); // Envoie un message toutes les 20 secondes
+}
 
-
+keepServiceWorkerActive();
 
 const products = [];
 
+//recois les messages envoyes par le script injecter dans la page
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  if (message.type === "productData") {
+    const { price, title, img, link } = message;
+    //recuperation des produits existsnts a partir du stockage local
+    chrome.storage.local.get({ products: [] }, (data) => {
+      const products = data.products;
 
-  if (message.price && message.title) {
-      // Accéder aux données du message
-      const price = message.price;
-      const title = message.title;
-      const img = message.img;
+      //ajouter du nouveau produit a la liste
+      products.push({ price, title, img, link });
 
-    
-      
-        const item = { title : title, price : price, img : img}
-        console.log(item)
-        products.push(item)
-        console.log(products)
-      
-        // Faire quelque chose avec les données, par exemple, les afficher dans la console
-        console.log(price, title, img,'pricetitlebg');
-      
-        //Stocker les données dans localStorage
-        chrome.storage.local.set({"products" : products});
-
-    }
-  });
+      //mis a jour du stockage local avec la nouvelle liste
+      chrome.storage.local.set({ products }, () => {
+        console.log("produit ajouter:", { price, title, img, link });
+      });
+    });
+  } else if (message.type === "keepActive") {
+    //pour maintenir le service worker active
+    console.log("keep service worker active");
+  }
+});
